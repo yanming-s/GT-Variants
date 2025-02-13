@@ -1,0 +1,6 @@
+lib/__pycache__/*
+models/__pycache__/*
+task2_digress_qm9.ipynb
+models/digress.py
+models/gt_digress.py
+dataset/QM9_DiGress/*
