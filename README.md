@@ -1,27 +1,97 @@
 # Graph Transformer Optimization
 
-> This file is adapted from the generation of GPT-4o and Claude 3.5 Sonnet.
-
-This repository contains an enhanced implementation of the [vanilla Graph Transformer](https://arxiv.org/abs/2012.09699) (GT) network, referred to as GTv1. The primary focus is on improving the model's performance through advancements in the attention layers, resulting in a new architecture called GTv2.
+> This README file is adapted from the `gtv2` branch of this repository.
 
 
 
-## Environment Setup and Datastes
+## Naming Examples of GTv3
 
-The core implementation files, datasets, and environment setups are adapted from National University of Singapore CS5284 Graph Machine Learning [tutorial](https://github.com/xbresson/CS5284_2024/tree/main).
+1. GTv3 [$\text{SA}$-$\text{CA}_\text{e}$]
+
+   ```python
+   class attention_head(nn.Module):
+       ...
+       def forward(self, x, e):
+           x_new, _ = self.self_att_node_to_node(x, e)  # x_new: [bs, n, d_head]
+           _, e_new = self.cross_att_node_to_edge(x, e) # e_new: [bs, n, n, d_head]
+           return x_new, e_new
+   ```
+
+2. GTv3 [$\text{CA}_\text{n}$-$\text{CA}_\text{e}(h_i^{\ell+1})$]
+
+   ```python
+   class attention_head(nn.Module):
+       ...
+       def forward(self, x, e):
+           x_new, _ = self.cross_att_edge_to_node(x, e)     # x_new: [bs, n, d_head]
+           _, e_new = self.cross_att_node_to_edge(x_new, e) # e_new: [bs, n, n, d_head]
+           return x_new, e_new
+   ```
+
+3. GTv3 [$\text{SA}$-$\text{CA}_\text{n}(\hat{h}_i^{\ell+1})$-$\text{CA}_\text{e}(\hat{h}_i^{\ell+1})$]
+
+   ```python
+   class attention_head(nn.Module):
+       ...
+       def forward(self, x, e):
+           x_hat, _ = self.self_att_node_to_node(x, e)      # x_hat: [bs, n, d_head]
+           x_new, _ = self.cross_att_edge_to_node(x_hat, e) # h_new: [bs, n, d_head]
+           _, e_new = self.cross_att_node_to_edge(x_hat, e) # e_new: [bs, n, n, d_head]
+           return x_new, e_new
+   ```
+
+4. GTv3 [$\text{SA}$-$\text{CA}_\text{n}(\hat{h}_i^{\ell+1})$-$\text{CA}_\text{n}(h_i^{\ell+1})$]
+
+   ```python
+   class attention_head(nn.Module):
+       ...
+       def forward(self, x, e):
+           x_hat, _ = self.self_att_node_to_node(x, e)      # x_hat: [bs, n, d_head]
+           x_new, _ = self.cross_att_edge_to_node(x_hat, e) # h_new: [bs, n, d_head]
+           _, e_new = self.cross_att_node_to_edge(x_new, e) # e_new: [bs, n, n, d_head]
+           return x_new, e_new
+   ```
+
+   
+
+## Preliminary Results
+
+Regression results on a subset of the ZINC dataset (2000 training samples, 200 testing samples) with batch size 512. Models are trained for 250 epochs, and the loss values reported are the mean and standard deviation from the last 10 epochs.
+
+|             Network             | Train Loss on ZINC | Test Loss on ZINC  | Time (min) |
+| :-----------------------------: | :----------------: | :----------------: | :--------: |
+|              GTv1              |   0.5629(0.0006)   |  0.5219(0.0024) |   7.9222   |
+| GTv2-Weighted ($\alpha$=0.25) |   0.5934(0.0004)   |  0.5240(0.0009) |  14.9815 |
+| GTv2-Weighted ($\alpha$=0.5) |   0.5829(0.0003)   |  0.5083(0.0005) |  15.8551 |
+| GTv2-Weighted ($\alpha$=0.75) |   0.5661(0.0004)   |  0.4819(0.0008) |  16.4721 |
+| GTv2-Weighted ($\alpha$=0.8) | 0.5734(0.0005) | 0.4855(0.0013) | 12.6444 |
+| GTv2-Weighted ($\alpha$=0.9) | 0.5739(0.0007) | 0.4852(0.0012) | 16.2364 |
+|          GTv2-Gated          |   0.5653(0.0006)   |  0.4947(0.0011) |  16.3939 |
+|          GTv2-Mixed          |   0.5920(0.0002)   |  0.5125(0.0005) |  15.8853 |
+|          **GTv2-FiLM**          |   **0.5418(0.0002)**   | **0.4614(0.0008)** |  16.5036 |
+| GTv3 [$\text{SA}$-$\text{CA}_\text{e}$] | 0.6487(0.0003) | 0.6037(0.0009) | 7.0779 |
+| GTv3 [$\text{CA}_\text{n}$-$\text{CA}_\text{e}$] | <u>*0.5560(0.0005)*</u> | *<u>0.4763(0.0008)</u>* | 10.2855 |
+| GTv3 [$\text{SA}$-$\text{CA}_\text{e}(h_i^{\ell+1})$] | 0.6438(0.0002) | 0.6006(0.0007) | 7.7025 |
+| GTv3 [$\text{CA}_\text{n}$-$\text{CA}_\text{e}(h_i^{\ell+1})$] | <u>*0.5629(0.0007)*</u> | <u>*0.4768(0.0024)*</u> | 10.1360 |
+| GTv3 [$\text{CA}_\text{e}$-$\text{CA}_\text{n}(e_{ij}^{\ell+1})$] | 0.6282(0.0004) | 0.5798(0.0007) | 11.1540 |
+| GTv3 [$\text{SA}$-$\text{CA}_\text{n}(\hat{h}_i^{\ell+1})$-$\text{CA}_\text{e}(\hat{h}_i^{\ell+1})$] | 0.5857(0.0003) | 0.5091(0.0009) | 14.6597 |
+| GTv3 [$\text{SA}$-$\text{CA}_\text{n}(\hat{h}_i^{\ell+1})$-$\text{CA}_\text{n}(h_i^{\ell+1})$] | <u>*0.5749(0.0003)*</u> | <u>*0.4869(0.0006)*</u> | 14.9075 |
+| GTv3 [$\text{SA}$-$\text{CA}_\text{e}(\hat{h}_i^{\ell+1})$-$\text{CA}_\text{n}(\hat{h}_i^{\ell+1}, e_{ij}^{\ell+1})$] | 0.6524(0.0002) | 0.6153(0.0004) | 14.3571 |
+| GTv3 [$\text{CA}_\text{n}$-$\text{SA}(\hat{h}_i^{\ell+1})$-$\text{CA}_\text{e}(\hat{h}_i^{\ell+1})$] | <u>*0.5540(0.0004)*</u> | <u>*0.4730(0.0015)*</u> | 15.3171 |
+| GTv3 [$\text{CA}_\text{n}$-$\text{SA}(\hat{h}_i^{\ell+1})$-$\text{CA}_\text{n}(h_i^{\ell+1})$] | 0.5879(0.0003) | 0.5077(0.0019) | 14.7363 |
 
 
 
-## Attention Mechanisms of GTv2
+## Attention Mechanisms of GTv2 and GTv3
 
-GTv2 is an optimized version of the GTv1, which aims to enhance the modeling capabilities of graph data by making every component in the network "attentioned." The structure introduces three key types of attention mechanisms to capture interactions between nodes and edges effectively.
+GTv2 and GTv3 is an optimized version of the GTv1, which aims to enhance the modeling capabilities of graph data by making every component in the network "attentioned." The structure introduces three key types of attention mechanisms to capture interactions between nodes and edges effectively.
 
-1. **Cross-attention: node-to-edge**
+1. **Cross-attention: edge-to-node**
    - Update node features $h_i$ using edge features $e_{ij}$.
    
    - Mathematical expression: $h_i \leftarrow \sum\limits_{j \in \mathcal{V}} \text{softmax} \left( q_i^{\top} k_{ij} \right) v_{ij}$.
    
-2. **Cross-attention: edge-to-node**
+2. **Cross-attention: node-to-edge**
    - Update edge features $e_{ij}$ using information from its connected nodes ($h_i$, $h_j$).
    
    - Mathematical expression: $e_{ij} \leftarrow \frac{\exp \left( q_{ij}^{\top} k_i \right)}{\exp \left( q_{ij}^{\top} k_i \right) + \exp \left( q_{ij}^{\top} k_j \right)} v_i + \frac{\exp \left( q_{ij}^{\top} k_j \right)}{\exp \left( q_{ij}^{\top} k_i \right) + \exp \left( q_{ij}^{\top} k_j \right)} v_j$.
@@ -60,61 +130,6 @@ GTv2 introduces three integration mechanisms for combining self-attention and cr
 
 
 
-## Results
-
-
-> The results of task 2 and 3 are excerpted from the [repository](https://github.com/Klasnov/DiGress), which is forked from original code of the [DiGress](https://github.com/cvignac/DiGress).
-
-
-### Task 1: Regression on ZINC Dataset
-
-Regression results on a subset of the ZINC dataset (2000 training samples, 200 testing samples) with batch size 512. Models are trained for 250 epochs, and the loss values reported are the mean and standard deviation from the last 10 epochs.
-
-|             Network             | Train Loss on ZINC | Test Loss on ZINC  | Time (min) |
-| :-----------------------------: | :----------------: | :----------------: | :--------: |
-|              GTv1              |   0.5629(0.0006)   |  0.5219(0.0024)   |   7.9222   |
-| GTv2-Weighted ($\alpha$=0.25) |   0.5934(0.0004)   |  0.5240(0.0009)   |  14.9815   |
-| GTv2-Weighted ($\alpha$=0.5) |   0.5829(0.0003)   |  0.5083(0.0005)   |  15.8551   |
-| GTv2-Weighted ($\alpha$=0.75) |   0.5661(0.0004)   |  0.4819(0.0008)   |  16.4721   |
-|          GTv2-Gated          |   0.5653(0.0006)   |  0.4947(0.0011)   |  16.3939   |
-|          GTv2-Mixed          |   0.5920(0.0002)   |  0.5125(0.0005)   |  15.8853   |
-|          GTv2-FiLM          |   **0.5418(0.0002)**   | **0.4614(0.0008)** |  16.5036   |
-
-
-
-### Task 2: Generation on QM9 Dataset with DiGress
-
-Generation results with the DiGress model on a subset of the QM9 dataset (2000 training samples, 200 testing samples) with batch size 512. Models are trained for 500 epochs, generating 1000 samples to evaluate validity, uniqueness, and novelty. The GTv2-Weighted model uses hyperparameter $\alpha = 0.5$.
-
-|     Network      | Test Loss | Valid | Unique | Novelty |
-| :--------------: | :---------------: | :--------: | :--------------: | :--------------: |
-| *DiGress* | *142.9952* | *89.60%* | *99.33%* | *99.78%* |
-| GTv1 | **142.6156** | 78.10% | 99.87% | 99.87% |
-| GTv2-Weighted | 146.3584 | 73.10% | 99.61% | 99.61% |
-|  GTv2-Gated  | 143.9262 | 72.20% | 99.86% | 99.86% |
-|  GTv2-Mixed  | 144.2760 | 82.80% | 99.88% | **99.88%** |
-|   GTv2-FiLM   | 143.8812 | **83.40%** | **100.00%** | 99.52% |
-
-
-
-### Task 3: Generation on ZINC Dataset with DiGress
-
-Generation results with the DiGress model on a subset of the ZINC dataset (5000 training samples, 200 testing samples) with batch size 512. Models are trained for 1000 epochs, generating 1000 samples to evaluate validity and uniqueness. The GTv2-Weighted model uses hyperparameter $\alpha = 0.5$.
-
-|     Network      | Test Loss | Valid | Unique |
-| :--------------: | :---------------: | :--------: | :--------------: |
-| *DiGress* | *233.9124* | *60.90%* | *100.00%* |
-| GTv1 | 249.4620 | 53.80% | 100.00% |
-| GTv2-Weighted | 253.3110 | 53.10% | 100.00% |
-|  GTv2-Gated  | 271.0986 | 58.40% | 100.00% |
-|  GTv2-Mixed  | **240.4660** | 52.50% | 100.00% |
-|   GTv2-FiLM   | 260.0413 | **60.60%** | 100.00% |
-
-
-
 ## References
 
-1. [Vijay Prakash Dwivedi and Xavier Bresson. "A generalization of transformer networks to graphs." *arXiv preprint arXiv:2012.09699* (2020).](https://arxiv.org/abs/2012.09699)
-2. [Clement Vignac, Igor Krawczuk, Antoine Siraudin, Bohan Wang, Volkan Cevher, and Pascal Frossard. "Digress: Discrete denoising diffusion for graph generation." *arXiv preprint arXiv:2209.14734* (2022).](https://arxiv.org/abs/2209.14734)
-3. [Jonathan Ho, Ajay Jain and Pieter Abbeel. "Denoising diffusion probabilistic models." Advances in neural information processing systems 33 (2020): 6840-6851.](https://proceedings.neurips.cc/paper/2020/hash/4c5bcfec8584af0d967f1ab10179ca4b-Abstract.html)
-4. [Ethan Perez, Florian Strub, Harm de Vries, Vincent Dumoulin and Aaron Courville. "Film: Visual reasoning with a general conditioning layer." In Proceedings of the AAAI conference on artificial intelligence, vol. 32, no. 1. 2018.](https://ojs.aaai.org/index.php/AAAI/article/view/11671)
+[Vijay Prakash Dwivedi and Xavier Bresson. "A generalization of transformer networks to graphs." *arXiv preprint arXiv:2012.09699* (2020).](https://arxiv.org/abs/2012.09699)

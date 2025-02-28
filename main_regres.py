@@ -18,13 +18,13 @@ import numpy as np
 import math
 
 
-from models.gtv2_film import BlockGT
+from models.gtv3.ca_n__sa_h__ca_e_h import BlockGT
 
 TEST = False
 DEVICE= torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
 
-def main(test=False, device="cpu"):
+def main(is_test=False, device="cpu"):
     def group_molecules_per_size(dataset):
         mydict = {}
         for mol in dataset:
@@ -125,7 +125,7 @@ def main(test=False, device="cpu"):
     num_mol_size = 20
     num_warmup = 2 * max(num_mol_size, len(train) // bs)
 
-    if test:
+    if is_test:
         net = GT()
         net = net.to(device)
         def display_num_param(net):
@@ -165,7 +165,7 @@ def main(test=False, device="cpu"):
         optimizer.step()
 
     else:
-    # Random seed
+        # Random seed
         seed = 0
         torch.manual_seed(seed)
         np.random.seed(seed)
@@ -256,7 +256,7 @@ def main(test=False, device="cpu"):
                 print(line)
 
         print()
-        print("GTv2 FiLM")
+        print(r"GTv3 [$\text{CA}_\text{n}$-$\text{SA}(\hat{h}_i^{\ell+1})$-$\text{CA}_\text{e}(\hat{h}_i^{\ell+1})$]")
         print(f"time: {elapsed:.4f} min")
         print(f"last 10 train loss - mean: {np.mean(last_10_train_loss):.4f} - std: {np.std(last_10_train_loss):.4f}")
         print(f"last 10 test loss - mean: {np.mean(last_10_test_loss):.4f} - std: {np.std(last_10_test_loss):.4f}")
