@@ -6,7 +6,7 @@
 
 ## Naming Examples of GTv3
 
-1. GTv3 $[\text{SA}-\text{CA}_\text{e}]$
+1. GTv3 $[ \text{SA} - \text{CA}_{\text{e}} ]$
 
    ```python
    class attention_head(nn.Module):
@@ -17,7 +17,7 @@
            return x_new, e_new
    ```
 
-2. GTv3 $[\text{CA}_\text{n}-\text{CA}_\text{e}(h_i^{\ell+1})]$
+2. GTv3 $[ \text{CA}\_{\text{n}} - \text{CA}\_{\text{e}} (h_i^{\ell+1}) ]$
 
    ```python
    class attention_head(nn.Module):
@@ -28,7 +28,7 @@
            return x_new, e_new
    ```
 
-3. GTv3 $[\text{SA}-\text{CA}_\text{n}(\hat{h}_i^{\ell+1})-\text{CA}_\text{e}(\hat{h}_i^{\ell+1})]$
+3. GTv3 $[ \text{SA} - \text{CA}\_{\text{n}} ( \hat{h}_i^{\ell+1} ) - \text{CA}\_{\text{e}} ( \hat{h}_i^{\ell+1} ) ]$
 
    ```python
    class attention_head(nn.Module):
@@ -40,7 +40,7 @@
            return x_new, e_new
    ```
 
-4. GTv3 $[\text{SA}-\text{CA}_\text{n}(\hat{h}_i^{\ell+1})-\text{CA}_\text{n}(h_i^{\ell+1})]$
+4. GTv3 $[ \text{SA} - \text{CA}\_{\text{n}} ( \hat{h}_i^{\ell+1} ) - \text{CA}\_{\text{e}} ( h_i^{\ell+1} ) ]$
 
    ```python
    class attention_head(nn.Module):
@@ -69,16 +69,16 @@ Regression results on a subset of the ZINC dataset (2000 training samples, 200 t
 |          GTv2-Gated          |   0.5653(0.0006)   |  0.4947(0.0011) |  16.3939 |
 |          GTv2-Mixed          |   0.5920(0.0002)   |  0.5125(0.0005) |  15.8853 |
 |          **GTv2-FiLM**          |   **0.5418(0.0002)**   | **0.4614(0.0008)** |  16.5036 |
-| GTv3 $[\text{SA}-\text{CA}_\text{e}]$ | 0.6487(0.0003) | 0.6037(0.0009) | 7.0779 |
-| GTv3 $[\text{CA}_\text{n}-\text{CA}_\text{e}]$ | *0.5560(0.0005)* | *0.4763(0.0008)* | 10.2855 |
-| GTv3 $[\text{SA}-\text{CA}_\text{e}(h_i^{\ell+1})]$ | 0.6438(0.0002) | 0.6006(0.0007) | 7.7025 |
-| GTv3 $[\text{CA}_\text{n}-\text{CA}_\text{e}(h_i^{\ell+1})]$ | *0.5629(0.0007)* | *0.4768(0.0024)* | 10.1360 |
-| GTv3 $[\text{CA}_\text{e}-\text{CA}_\text{n}(e_{ij}^{\ell+1})]$ | 0.6282(0.0004) | 0.5798(0.0007) | 11.1540 |
-| GTv3 $[\text{SA}-\text{CA}_\text{n}(\hat{h}_i^{\ell+1})-\text{CA}_\text{e}(\hat{h}_i^{\ell+1})]$ | 0.5857(0.0003) | 0.5091(0.0009) | 14.6597 |
-| GTv3 $[\text{SA}-\text{CA}_\text{n}(\hat{h}_i^{\ell+1})-\text{CA}_\text{n}(h_i^{\ell+1})]$ | *0.5749(0.0003)* | *0.4869(0.0006)* | 14.9075 |
-| GTv3 $[\text{SA}-\text{CA}_\text{e}(\hat{h}_i^{\ell+1})-\text{CA}_\text{n}(\hat{h}_i^{\ell+1}, e_{ij}^{\ell+1})]$ | 0.6524(0.0002) | 0.6153(0.0004) | 14.3571 |
-| GTv3 $[\text{CA}_\text{n}-\text{SA}(\hat{h}_i^{\ell+1})-\text{CA}_\text{e}(\hat{h}_i^{\ell+1})]$ | *0.5540(0.0004)* | *0.4730(0.0015)* | 15.3171 |
-| GTv3 $[\text{CA}_\text{n}-\text{SA}(\hat{h}_i^{\ell+1})-\text{CA}_\text{n}(h_i^{\ell+1})]$ | 0.5879(0.0003) | 0.5077(0.0019) | 14.7363 |
+| GTv3 $[ \text{SA} - \text{CA}_{\text{e}} ]$ | 0.6487(0.0003) | 0.6037(0.0009) | 7.0779 |
+| GTv3 $[ \text{CA}\_{\text{n}} - \text{CA}\_{\text{e}}]$ (GTv2-Weighted, $\alpha$=1.0) | <ins>*0.5560(0.0005)*</ins> | <ins>*0.4763(0.0008)*</ins> | 10.2855 |
+| GTv3 $[ \text{SA} - \text{CA}\_{\text{e}} ( h_i^{\ell+1} ) ]$ | 0.6438(0.0002) | 0.6006(0.0007) | 7.7025 |
+| GTv3 $[ \text{CA}\_{\text{n}} - \text{CA}\_{\text{e}} ( h_i^{\ell+1} ) ]$ | <ins>*0.5629(0.0007)*</ins> | <ins>*0.4768(0.0024)*</ins> | 10.1360 |
+| GTv3 $[ \text{CA}\_{\text{e}} - \text{CA}\_{\text{n}} ( e\_{ij}^{\ell+1} ) ]$ | 0.6282(0.0004) | 0.5798(0.0007) | 11.1540 |
+| GTv3 $[ \text{SA} - \text{CA}\_{\text{n}} ( \hat{h}\_i^{\ell+1} ) - \text{CA}\_{\text{e}} ( \hat{h}\_{i}^{\ell+1} ) ]$ | 0.5857(0.0003) | 0.5091(0.0009) | 14.6597 |
+| GTv3 $[ \text{SA} - \text{CA}\_{\text{n}} ( \hat{h}_i^{\ell+1}) - \text{CA}\_{\text{e}} ( h_i^{\ell+1} ) ]$ | <ins>*0.5749(0.0003)*</ins> | <ins>*0.4869(0.0006)*</ins> | 14.9075 |
+| GTv3 $[ \text{SA} - \text{CA}\_{\text{e}} ( \hat{h}_i^{\ell+1}) - \text{CA}\_{\text{n}} ( \hat{h}_i^{\ell+1}, e\_{ij}^{\ell+1} ) ]$ | 0.6524(0.0002) | 0.6153(0.0004) | 14.3571 |
+| GTv3 $[ \text{CA}\_{\text{n}} - \text{SA}( \hat{h}_i^{\ell+1} ) - \text{CA}\_{\text{e}} ( \hat{h}_i^{\ell+1} ) ]$ | <ins>*0.5540(0.0004)*</ins> | <ins>*0.4730(0.0015)*</ins> | 15.3171 |
+| GTv3 $[ \text{CA}\_{\text{n}} - \text{SA} ( \hat{h}_i^{\ell+1}) - \text{CA}\_{\text{e}} ( h_i^{\ell+1} ) ]$ | 0.5879(0.0003) | 0.5077(0.0019) | 14.7363 |
 
 
 
@@ -111,8 +111,6 @@ GTv2 introduces three integration mechanisms for combining self-attention and cr
    
    $h_k = \alpha \cdot \text{CrossAttention}(h^{\ell}) + (1 - \alpha) \cdot \text{SelfAttention}(h^{\ell})$.
    
-   > *Three variants tested*: $\alpha = 0.25, 0.5,$ and $0.75$.
-
 2. **Gated integration:** Implements a learnable gating mechanism, and uses a sigmoid function to compute dynamic weights.
 
    $g = \sigma \left( W_g \cdot \text{Concat}[\text{CrossAttention}(h^{\ell}), \text{SelfAttention}(h^{\ell})] + b_g \right)$,
