@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from models.attention import attention_vanilla
 
 
 def sym_tensor(x):
@@ -11,39 +12,11 @@ def sym_tensor(x):
     return x               # [bs, n, n, d]
 
 
-class head_attention(nn.Module):
-    def __init__(self, d, d_head, drop=0.0):
-        super().__init__()
-        self.Q = nn.Linear(d, d_head)
-        self.K = nn.Linear(d, d_head)
-        self.E = nn.Linear(d, d_head)
-        self.V = nn.Linear(d, d_head)
-        self.sqrt_d = torch.sqrt(torch.tensor(d_head))
-        self.drop_att = nn.Dropout(drop)
-        self.Ni = nn.Linear(d, d_head)
-        self.Nj = nn.Linear(d, d_head)
-    def forward(self, x, e):
-        Q = self.Q(x) # [bs, n, d_head]
-        K = self.K(x) # [bs, n, d_head]
-        V = self.V(x) # [bs, n, d_head]
-        Q = Q.unsqueeze(2) # [bs, n, 1, d_head]
-        K = K.unsqueeze(1) # [bs, 1, n, d_head]
-        E = self.E(e) # [bs, n, n, d_head]
-        Ni = self.Ni(x).unsqueeze(2) # [bs, n, 1, d_head]
-        Nj = self.Nj(x).unsqueeze(1) # [bs, 1, n, d_head]
-        e = Ni + Nj + E              # [bs, n, n, d_head]
-        Att = (Q * e * K).sum(dim=3) / self.sqrt_d # [bs, n, n]
-        Att = torch.softmax(Att, dim=1)            # [bs, n, n]
-        Att = self.drop_att(Att)                   # [bs, n, n]
-        x = Att @ V                  # [bs, n, d_head]
-        return x, e                  # [bs, n, d_head], [bs, n, n, d_head]
-
-
 class MHA(nn.Module):
     def __init__(self, d, num_heads, drop=0.0):  
         super().__init__()
         d_head = d // num_heads
-        self.heads = nn.ModuleList([head_attention(d, d_head, drop) for _ in range(num_heads)])
+        self.heads = nn.ModuleList([attention_vanilla(d, d_head, drop) for _ in range(num_heads)])
         self.WOx = nn.Linear(d, d)
         self.WOe = nn.Linear(d, d)
         self.drop_x = nn.Dropout(drop)
